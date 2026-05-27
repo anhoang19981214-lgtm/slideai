@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlideAI — Tạo slide mới</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .create-layout { display:grid; grid-template-columns:1fr 280px; gap:24px; padding:40px 0; }
+    @media(max-width:768px){.create-layout{grid-template-columns:1fr;}}
+    .loading-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(15,12,41,0.85); backdrop-filter:blur(6px); z-index:200;
+      flex-direction:column; align-items:center; justify-content:center; gap:20px;
+    }
+    .loading-overlay.show { display:flex; }
+    .big-spinner { width:48px; height:48px; border-width:4px; }
+    .apikey-banner { background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.3); border-radius:var(--radius); padding:16px 20px; margin-bottom:24px; display:none; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav-brand">✦ SlideAI</a>
+    <div class="nav-links">
+      <a href="/dashboard.html">📚 Lịch sử</a>
+      <a href="#" id="logout-link">Đăng xuất</a>
+    </div>
+  </nav>
+
+  <div class="loading-overlay" id="loading">
+    <div class="spinner big-spinner"></div>
+    <div style="font-size:18px;font-weight:600;">AI đang tạo slide của bạn...</div>
+    <div class="text-muted" style="font-size:14px;">Thường mất 10–30 giây</div>
+  </div>
+
+  <div class="container">
+    <div class="create-layout">
+      <div>
+        <h1 style="font-size:28px;font-weight:800;margin-bottom:6px;">✨ Tạo bài thuyết trình mới</h1>
+        <p class="text-muted" style="font-size:14px;margin-bottom:28px;">Nhập chủ đề — AI Gemini sẽ tạo toàn bộ nội dung</p>
+
+        <div id="apikey-banner" class="apikey-banner">
+          <strong style="color:var(--accent);">⚠ Chưa có Gemini API Key</strong>
+          <p style="font-size:13px;margin:8px 0 12px;color:var(--muted);">Nhập API key để tạo slide. Lấy miễn phí tại Google AI Studio.</p>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input id="apikey-input" type="password" class="form-input" placeholder="AIza..." style="flex:1">
+            <button class="btn btn-primary" onclick="saveApiKey()">Lưu</button>
+          </div>
+        </div>
+
+        <div class="form-group"><label class="form-label">Chủ đề / Tiêu đề *</label><input id="topic" type="text" class="form-input" placeholder="VD: Tương lai của AI trong giáo dục"></div>
+        <div class="form-group"><label class="form-label">Mô tả thêm (tuỳ chọn)</label><textarea id="description" class="form-textarea" placeholder="Thêm chi tiết để AI hiểu đúng hơn..."></textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group"><label class="form-label">Số slide (5–25)</label><input id="slide-count" type="number" class="form-input" value="10" min="5" max="25"></div>
+          <div class="form-group">
+            <label class="form-label">Ngôn ngữ</label>
+            <select id="language" class="form-select">
+              <option value="vi">🇻🇳 Tiếng Việt</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="zh">🇨🇳 中文</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chủ đề màu sắc</label>
+          <div class="theme-swatches">
+            <div class="swatch swatch-purple active" data-theme="purple" onclick="selectTheme(this)" title="Purple"></div>
+            <div class="swatch swatch-pink"   data-theme="pink"   onclick="selectTheme(this)" title="Pink"></div>
+            <div class="swatch swatch-blue"   data-theme="blue"   onclick="selectTheme(this)" title="Blue"></div>
+            <div class="swatch swatch-green"  data-theme="green"  onclick="selectTheme(this)" title="Green"></div>
+            <div class="swatch swatch-sunset" data-theme="sunset" onclick="selectTheme(this)" title="Sunset"></div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-lg" style="width:100%;margin-top:8px;" onclick="generate()">✦ Tạo Slide với AI</button>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="form-label" style="margin-bottom:14px;">Cấu trúc dự kiến</div>
+          <div style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:6px;padding:10px 12px;margin-bottom:6px;">
+            <div style="font-size:11px;color:var(--accent);font-weight:600;">01 — Trang bìa</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px;">Tiêu đề + phụ đề</div>
+          </div>
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:6px;">
+            <div style="font-size:11px;color:var(--muted);font-weight:600;">02 – N-1 — Nội dung</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px;">AI tạo tự động</div>
+          </div>
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+            <div style="font-size:11px;color:var(--muted);font-weight:600;">N — Kết luận</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px;">Tóm tắt</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    requireAuth();
+    let selectedTheme = 'purple';
+    let hasApiKey = false;
+    document.getElementById('logout-link').onclick = () => { Auth.clearToken(); window.location.href = '/'; };
+
+    (async () => {
+      const r = await apiFetch('/auth/me');
+      if (r && r.ok) {
+        hasApiKey = (await r.json()).has_api_key;
+        if (!hasApiKey) document.getElementById('apikey-banner').style.display = 'block';
+      }
+    })();
+
+    function selectTheme(el) {
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+      selectedTheme = el.dataset.theme;
+    }
+
+    async function saveApiKey() {
+      const key = document.getElementById('apikey-input').value.trim();
+      if (!key) return showToast('Nhập API key', 'error');
+      const r = await apiFetch('/auth/api-key', { method: 'PUT', body: JSON.stringify({ gemini_api_key: key }) });
+      if (r && r.ok) { hasApiKey = true; document.getElementById('apikey-banner').style.display = 'none'; showToast('API key đã được lưu', 'success'); }
+      else showToast('Lưu API key thất bại', 'error');
+    }
+
+    async function generate() {
+      const topic = document.getElementById('topic').value.trim();
+      if (!topic) return showToast('Nhập chủ đề bài thuyết trình', 'error');
+      const slideCount = parseInt(document.getElementById('slide-count').value);
+      if (slideCount < 5 || slideCount > 25) return showToast('Số slide phải từ 5 đến 25', 'error');
+      if (!hasApiKey) return showToast('Vui lòng lưu Gemini API key trước', 'error');
+
+      document.getElementById('loading').classList.add('show');
+      const body = {
+        topic,
+        description: document.getElementById('description').value.trim() || undefined,
+        slide_count: slideCount,
+        language: document.getElementById('language').value,
+        theme: selectedTheme,
+      };
+      const r = await apiFetch('/slides/generate', { method: 'POST', body: JSON.stringify(body) });
+      document.getElementById('loading').classList.remove('show');
+      if (r && r.ok) { window.location.href = `/preview.html?id=${(await r.json()).slide_id}`; }
+      else { const e = r ? await r.json() : {}; showToast(e.detail || 'Tạo slide thất bại. Kiểm tra lại API key.', 'error'); }
+    }
+  </script>
+</body>
+</html>
