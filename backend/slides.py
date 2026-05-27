@@ -4,7 +4,7 @@ from typing import Optional
 import google.generativeai as genai
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from backend.auth import get_current_user, decrypt_key
@@ -36,9 +36,9 @@ def _call_gemini(api_key: str, prompt: str) -> list[dict]:
     response = model.generate_content(prompt)
     text = response.text.strip()
     if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
+        start = text.index("\n") + 1 if "\n" in text else 3
+        end = text.rindex("```")
+        text = text[start:end].strip()
     return json.loads(text)
 
 
@@ -60,12 +60,21 @@ def _generate_slides(
         return _call_gemini(api_key, retry_prompt)
 
 
+VALID_THEMES = {"purple", "pink", "blue", "green", "sunset"}
+
 class GenerateBody(BaseModel):
-    topic: str
-    description: Optional[str] = None
+    topic: str = Field(min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=500)
     slide_count: int = Field(ge=5, le=25)
-    language: str = "vi"
-    theme: str = "purple"
+    language: str = Field(default="vi", min_length=2, max_length=10)
+    theme: str = Field(default="purple")
+
+    @field_validator("theme")
+    @classmethod
+    def theme_must_be_valid(cls, v: str) -> str:
+        if v not in VALID_THEMES:
+            raise ValueError(f"theme must be one of {sorted(VALID_THEMES)}")
+        return v
 
 
 @router.get("/history")
@@ -142,7 +151,12 @@ def generate(
     if not user.gemini_api_key_enc:
         raise HTTPException(status_code=400, detail="No Gemini API key saved. Add it in account settings.")
     api_key = decrypt_key(user.gemini_api_key_enc)
-    slides = _generate_slides(api_key, body.topic, body.description, body.slide_count, body.language)
+    try:
+        slides = _generate_slides(api_key, body.topic, body.description, body.slide_count, body.language)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Gemini API error: {exc}") from exc
+    if not isinstance(slides, list) or not slides:
+        raise HTTPException(status_code=502, detail="Gemini returned invalid slide data.")
     record = Slide(
         user_id=user.id,
         title=body.topic,
