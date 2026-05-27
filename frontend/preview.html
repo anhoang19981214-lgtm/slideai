@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlideAI — Xem slide</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <style>
+    .preview-layout { display:grid; grid-template-columns:140px 1fr; height:calc(100vh - 57px); overflow:hidden; }
+    .thumbnail-strip { background:rgba(255,255,255,0.03); border-right:1px solid var(--border); overflow-y:auto; padding:10px 8px; display:flex; flex-direction:column; gap:6px; }
+    .thumb { border:1px solid var(--border); border-radius:6px; overflow:hidden; cursor:pointer; transition:border-color .2s; flex-shrink:0; }
+    .thumb.active { border-color:var(--accent); }
+    .thumb:hover { border-color:rgba(167,139,250,0.5); }
+    .thumb-inner { height:68px; display:flex; align-items:center; justify-content:center; padding:8px; font-size:9px; color:rgba(255,255,255,0.7); text-align:center; }
+    .thumb-num { background:rgba(0,0,0,0.4); font-size:9px; color:var(--muted); padding:2px 6px; }
+    .reveal-area { position:relative; overflow:hidden; background:#000; }
+    .reveal { width:100%!important; height:100%!important; }
+    .reveal .slides section { height:100%; display:flex!important; flex-direction:column; justify-content:center; padding:60px 80px; }
+    .slide-cover { align-items:center; text-align:center; width:100%; }
+    .slide-title { font-size:2em; font-weight:800; line-height:1.2; margin-bottom:16px; }
+    .slide-bullets { list-style:none; text-align:left; width:100%; }
+    .slide-bullets li { padding:10px 0 10px 20px; border-bottom:1px solid rgba(255,255,255,0.1); font-size:1.05em; position:relative; }
+    .slide-bullets li::before { content:'▸'; position:absolute; left:0; opacity:0.6; }
+    .slide-summary { font-size:1.1em; opacity:.85; line-height:1.7; }
+    .theme-bar { width:60px; height:4px; border-radius:2px; margin:16px auto 0; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav-brand">✦ SlideAI</a>
+    <div class="nav-links">
+      <a href="/create.html" class="btn btn-secondary" style="padding:7px 14px;font-size:13px;">← Tạo mới</a>
+      <a href="#" id="export-btn" class="btn btn-success" style="padding:7px 14px;font-size:13px;">⬇ Tải .pptx</a>
+      <a href="/dashboard.html" class="btn btn-secondary" style="padding:7px 14px;font-size:13px;">📚 Lịch sử</a>
+    </div>
+  </nav>
+  <div class="preview-layout">
+    <div class="thumbnail-strip" id="thumbnails"></div>
+    <div class="reveal-area">
+      <div class="reveal"><div class="slides" id="slides-container"></div></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="/app.js"></script>
+  <script>
+    requireAuth();
+
+    const THEME_COLORS = {
+      purple: { bg:'#0f0c29', accent:'#a78bfa', text:'#e2d9f3' },
+      pink:   { bg:'#1a0010', accent:'#f472b6', text:'#fce7f3' },
+      blue:   { bg:'#00111e', accent:'#4facfe', text:'#e0f2fe' },
+      green:  { bg:'#001a0f', accent:'#43e97b', text:'#dcfce7' },
+      sunset: { bg:'#1a000d', accent:'#fa709a', text:'#ffe4e6' },
+    };
+
+    const slideId = getParam('id');
+    let deck;
+    if (!slideId) { window.location.href = '/dashboard.html'; }
+
+    (async () => {
+      const r = await apiFetch(`/slides/${slideId}`);
+      if (!r || !r.ok) {
+        showToast('Không tìm thấy slide', 'error');
+        setTimeout(() => window.location.href = '/dashboard.html', 2000);
+        return;
+      }
+      const data = await r.json();
+      renderSlides(data.slides, THEME_COLORS[data.theme] || THEME_COLORS.purple);
+    })();
+
+    document.getElementById('export-btn').onclick = async (e) => {
+      e.preventDefault();
+      const r = await apiFetch(`/slides/export/${slideId}`);
+      if (r && r.ok) {
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `slide-${slideId}.pptx`; a.click();
+        URL.revokeObjectURL(url);
+      } else showToast('Xuất file thất bại', 'error');
+    };
+
+    function renderSlides(slides, colors) {
+      const container = document.getElementById('slides-container');
+      const thumbs = document.getElementById('thumbnails');
+      container.innerHTML = ''; thumbs.innerHTML = '';
+
+      slides.forEach((s, i) => {
+        const section = document.createElement('section');
+        section.style.cssText = `background:${colors.bg};color:${colors.text};`;
+
+        if (s.type === 'cover') {
+          section.innerHTML = `<div class="slide-cover"><h2 class="slide-title" style="color:${colors.accent}">${s.title}</h2><div class="theme-bar" style="background:${colors.accent}"></div><p class="slide-subtitle">${s.subtitle || ''}</p></div>`;
+        } else if (s.type === 'content') {
+          const bullets = (s.bullets || []).map(b => `<li>${b}</li>`).join('');
+          section.innerHTML = `<h3 class="slide-title" style="color:${colors.accent};font-size:1.5em">${s.title}</h3><ul class="slide-bullets">${bullets}</ul>`;
+        } else if (s.type === 'conclusion') {
+          section.innerHTML = `<div class="slide-cover"><h2 class="slide-title" style="color:${colors.accent}">${s.title}</h2><div class="theme-bar" style="background:${colors.accent}"></div><p class="slide-summary">${s.summary || ''}</p></div>`;
+        }
+        container.appendChild(section);
+
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb' + (i === 0 ? ' active' : '');
+        thumb.dataset.index = i;
+        thumb.innerHTML = `<div class="thumb-inner" style="background:${colors.bg};color:${colors.accent}"><span>${s.title}</span></div><div class="thumb-num">${i + 1}</div>`;
+        thumb.onclick = () => deck.slide(i);
+        thumbs.appendChild(thumb);
+      });
+
+      deck = new Reveal(document.querySelector('.reveal'), {
+        hash: false, controls: true, progress: true, keyboard: true, transition: 'slide',
+      });
+      deck.initialize().then(() => {
+        deck.on('slidechanged', (e) => {
+          document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+          const active = document.querySelector(`.thumb[data-index="${e.indexh}"]`);
+          if (active) { active.classList.add('active'); active.scrollIntoView({ block: 'nearest' }); }
+        });
+      });
+    }
+  </script>
+</body>
+</html>
