@@ -7,6 +7,7 @@ load_dotenv()
 
 from backend.database import Base, engine
 from backend.auth import router as auth_router
+from backend.slides import router as slides_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -21,4 +22,5 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(slides_router)
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
