@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from cryptography.fernet import Fernet
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -67,11 +67,11 @@ def get_current_user(
 
 class AuthBody(BaseModel):
     email: str
-    password: str
+    password: str = Field(min_length=6)
 
 
 class ApiKeyBody(BaseModel):
-    gemini_api_key: str
+    gemini_api_key: str = Field(min_length=1)
 
 
 @router.post("/register")

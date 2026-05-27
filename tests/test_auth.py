@@ -6,7 +6,7 @@ def test_register(client):
 
 def test_register_duplicate_email(client):
     client.post("/auth/register", json={"email": "a@b.com", "password": "pass123"})
-    r = client.post("/auth/register", json={"email": "a@b.com", "password": "other"})
+    r = client.post("/auth/register", json={"email": "a@b.com", "password": "other123"})
     assert r.status_code == 400
 
 
@@ -19,7 +19,7 @@ def test_login(client):
 
 def test_login_wrong_password(client):
     client.post("/auth/register", json={"email": "a@b.com", "password": "pass123"})
-    r = client.post("/auth/login", json={"email": "a@b.com", "password": "wrong"})
+    r = client.post("/auth/login", json={"email": "a@b.com", "password": "wrongpass"})
     assert r.status_code == 401
 
 
@@ -44,3 +44,14 @@ def test_update_api_key(client):
     assert r.status_code == 200
     r = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r.json()["has_api_key"] is True
+
+
+def test_me_requires_auth(client):
+    r = client.get("/auth/me")
+    assert r.status_code == 403
+
+
+def test_api_key_round_trip():
+    from backend.auth import encrypt_key, decrypt_key
+    original = "AIzaTestKeyRoundTrip"
+    assert decrypt_key(encrypt_key(original)) == original
