@@ -69,3 +69,46 @@ def test_generate_requires_auth(client):
         json={"topic": "Test", "slide_count": 5, "language": "vi", "theme": "purple"},
     )
     assert r.status_code == 403
+
+
+def test_export_pptx(client):
+    token = _register_and_get_token(client)
+    mock_response = MagicMock()
+    mock_response.text = json.dumps(MOCK_SLIDES)
+
+    with patch("backend.slides.genai.GenerativeModel") as mock_model_cls:
+        mock_model_cls.return_value.generate_content.return_value = mock_response
+        gen_r = client.post(
+            "/slides/generate",
+            json={"topic": "Test", "slide_count": 5, "language": "en", "theme": "purple"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    slide_id = gen_r.json()["slide_id"]
+
+    r = client.get(f"/slides/export/{slide_id}", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    assert "presentationml" in r.headers["content-type"]
+    assert len(r.content) > 1000
+
+
+def test_export_wrong_user(client):
+    r1 = client.post("/auth/register", json={"email": "a@t.com", "password": "pass123"})
+    token_a = r1.json()["access_token"]
+    client.put("/auth/api-key", json={"gemini_api_key": "AIzaFake"}, headers={"Authorization": f"Bearer {token_a}"})
+
+    r2 = client.post("/auth/register", json={"email": "b@t.com", "password": "pass123"})
+    token_b = r2.json()["access_token"]
+
+    mock_response = MagicMock()
+    mock_response.text = json.dumps(MOCK_SLIDES)
+    with patch("backend.slides.genai.GenerativeModel") as mock_model_cls:
+        mock_model_cls.return_value.generate_content.return_value = mock_response
+        gen_r = client.post(
+            "/slides/generate",
+            json={"topic": "Test", "slide_count": 5, "language": "en", "theme": "purple"},
+            headers={"Authorization": f"Bearer {token_a}"},
+        )
+    slide_id = gen_r.json()["slide_id"]
+
+    r = client.get(f"/slides/export/{slide_id}", headers={"Authorization": f"Bearer {token_b}"})
+    assert r.status_code == 403
