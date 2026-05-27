@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlideAI — Lịch sử slide</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .dash-header { display:flex; justify-content:space-between; align-items:center; padding:40px 0 24px; }
+    .slides-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; padding-bottom:60px; }
+    .slide-card { display:flex; flex-direction:column; }
+    .slide-thumb { height:140px; border-radius:8px 8px 0 0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; text-align:center; padding:16px; }
+    .slide-card-body { padding:16px; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; background:var(--card-bg); flex:1; }
+    .slide-card-title { font-weight:700; font-size:15px; margin-bottom:6px; }
+    .slide-card-meta { font-size:12px; color:var(--muted); margin-bottom:14px; }
+    .slide-card-actions { display:flex; gap:8px; }
+    .empty-state { text-align:center; padding:80px 24px; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav-brand">✦ SlideAI</a>
+    <div class="nav-links">
+      <a href="/create.html" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">✦ Tạo mới</a>
+      <a href="#" id="logout-link">Đăng xuất</a>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="dash-header">
+      <div>
+        <h1 style="font-size:26px;font-weight:800;">📚 Lịch sử slide</h1>
+        <p class="text-muted" style="font-size:14px;margin-top:4px;" id="count-label">Đang tải...</p>
+      </div>
+    </div>
+    <div id="slides-grid" class="slides-grid"></div>
+    <div id="empty-state" class="empty-state" style="display:none;">
+      <div style="font-size:64px;margin-bottom:16px;">🎭</div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:10px;">Chưa có slide nào</h2>
+      <p class="text-muted" style="margin-bottom:24px;">Tạo bài thuyết trình đầu tiên của bạn với AI</p>
+      <a href="/create.html" class="btn btn-primary btn-lg">✦ Tạo slide đầu tiên</a>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    requireAuth();
+    document.getElementById('logout-link').onclick = () => { Auth.clearToken(); window.location.href = '/'; };
+
+    const THEME_BG = {
+      purple:'linear-gradient(135deg,#667eea,#764ba2)',
+      pink:  'linear-gradient(135deg,#f093fb,#f5576c)',
+      blue:  'linear-gradient(135deg,#4facfe,#00f2fe)',
+      green: 'linear-gradient(135deg,#43e97b,#38f9d7)',
+      sunset:'linear-gradient(135deg,#fa709a,#fee140)',
+    };
+
+    (async () => {
+      const r = await apiFetch('/slides/history');
+      if (!r || !r.ok) return;
+      const slides = await r.json();
+      const grid = document.getElementById('slides-grid');
+      document.getElementById('count-label').textContent = `${slides.length} bài thuyết trình`;
+      if (slides.length === 0) { document.getElementById('empty-state').style.display = 'block'; return; }
+
+      slides.forEach(s => {
+        const date = new Date(s.created_at).toLocaleDateString('vi-VN');
+        const card = document.createElement('div');
+        card.className = 'card slide-card';
+        card.innerHTML = `
+          <div class="slide-thumb" style="background:${THEME_BG[s.theme] || THEME_BG.purple}">${s.title}</div>
+          <div class="slide-card-body">
+            <div class="slide-card-title">${s.title}</div>
+            <div class="slide-card-meta">${s.slide_count} slides · ${s.language.toUpperCase()} · ${date}</div>
+            <div class="slide-card-actions">
+              <a href="/preview.html?id=${s.id}" class="btn btn-secondary" style="flex:1;justify-content:center;font-size:12px;">👁 Xem</a>
+              <button class="btn btn-success" style="flex:1;font-size:12px;" onclick="downloadPptx(${s.id})">⬇ .pptx</button>
+              <button class="btn btn-danger" style="font-size:12px;" onclick="deleteSlide(${s.id},this)">🗑</button>
+            </div>
+          </div>`;
+        grid.appendChild(card);
+      });
+    })();
+
+    async function downloadPptx(id) {
+      const r = await apiFetch(`/slides/export/${id}`);
+      if (r && r.ok) {
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `slide-${id}.pptx`; a.click();
+        URL.revokeObjectURL(url);
+      } else showToast('Xuất file thất bại', 'error');
+    }
+
+    async function deleteSlide(id, btn) {
+      if (!confirm('Xoá bài thuyết trình này?')) return;
+      const r = await apiFetch(`/slides/${id}`, { method: 'DELETE' });
+      if (r && r.ok) {
+        btn.closest('.slide-card').remove();
+        showToast('Đã xoá', 'success');
+        const remaining = document.querySelectorAll('.slide-card').length;
+        document.getElementById('count-label').textContent = `${remaining} bài thuyết trình`;
+        if (remaining === 0) document.getElementById('empty-state').style.display = 'block';
+      } else showToast('Xoá thất bại', 'error');
+    }
+  </script>
+</body>
+</html>
