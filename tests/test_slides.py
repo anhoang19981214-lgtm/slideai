@@ -153,8 +153,9 @@ def test_get_slide_by_id(client):
     assert r.status_code == 200
     data = r.json()
     assert data["title"] == "Topic B"
+    assert "slides" in data
     assert len(data["slides"]) == 3
-    assert "content_json" not in data
+    assert data["slides"][0]["type"] == "cover"
 
 
 def test_delete_slide(client):
