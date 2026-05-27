@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlideAI — Tạo slide thuyết trình bằng AI</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .hero { text-align: center; padding: 100px 24px 60px; }
+    .hero-title { font-size: 56px; font-weight: 800; line-height: 1.1; margin-bottom: 20px; }
+    .hero-title span { background: linear-gradient(90deg, #a78bfa, #f472b6, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub { font-size: 20px; color: var(--muted); max-width: 560px; margin: 0 auto 40px; line-height: 1.6; }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; padding: 40px 0 80px; }
+    .feature-icon { font-size: 36px; margin-bottom: 14px; }
+    .feature-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav-brand">✦ SlideAI</a>
+    <div class="nav-links">
+      <a href="/auth.html">Đăng nhập</a>
+      <a href="/auth.html?tab=register" class="btn btn-primary" style="padding:8px 16px;">Bắt đầu miễn phí</a>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="hero">
+      <h1 class="hero-title">Tạo slide đẹp<br><span>chỉ trong vài giây</span></h1>
+      <p class="hero-sub">Nhập chủ đề, chọn số slide — AI Gemini sẽ tạo toàn bộ nội dung và thiết kế. Xuất file .pptx hoặc trình chiếu ngay trên web.</p>
+      <a href="/auth.html?tab=register" class="btn btn-primary btn-lg">✦ Tạo slide ngay</a>
+    </div>
+    <div class="features">
+      <div class="card"><div class="feature-icon">🤖</div><div class="feature-title">Powered by Gemini AI</div><div class="feature-desc">Sử dụng API Gemini của riêng bạn. Nội dung thông minh, phù hợp chủ đề.</div></div>
+      <div class="card"><div class="feature-icon">🎨</div><div class="feature-title">5 chủ đề màu sắc</div><div class="feature-desc">Từ tím huyền bí đến xanh năng động — chọn theme phù hợp.</div></div>
+      <div class="card"><div class="feature-icon">📥</div><div class="feature-title">Xuất .pptx + web</div><div class="feature-desc">Tải file PowerPoint về máy hoặc trình chiếu trực tiếp với Reveal.js.</div></div>
+      <div class="card"><div class="feature-icon">🌐</div><div class="feature-title">Đa ngôn ngữ</div><div class="feature-desc">Tạo slide bằng tiếng Việt, tiếng Anh hay bất kỳ ngôn ngữ nào Gemini hỗ trợ.</div></div>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+  <script>redirectIfLoggedIn();</script>
+</body>
+</html>

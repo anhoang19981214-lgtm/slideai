@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlideAI — Đăng nhập</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .auth-page { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+    .auth-card { width:100%; max-width:420px; }
+    .auth-brand { display:block; text-align:center; font-size:26px; margin-bottom:32px; font-weight:800; background:linear-gradient(90deg,#a78bfa,#f472b6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-decoration:none; }
+    .tabs { display:flex; gap:4px; background:rgba(255,255,255,0.05); border-radius:8px; padding:4px; margin-bottom:28px; }
+    .tab { flex:1; padding:9px; text-align:center; border-radius:6px; cursor:pointer; font-size:14px; font-weight:600; color:var(--muted); border:none; background:none; font-family:'Inter',sans-serif; transition:all .2s; }
+    .tab.active { background:rgba(167,139,250,0.2); color:var(--accent); }
+    .form-panel { display:none; }
+    .form-panel.active { display:block; }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card card">
+      <a href="/" class="auth-brand">✦ SlideAI</a>
+      <div class="tabs">
+        <button class="tab active" id="tab-login" onclick="switchTab('login')">Đăng nhập</button>
+        <button class="tab" id="tab-register" onclick="switchTab('register')">Đăng ký</button>
+      </div>
+      <div class="form-panel active" id="panel-login">
+        <div class="form-group"><label class="form-label">Email</label><input id="login-email" type="email" class="form-input" placeholder="email@example.com"></div>
+        <div class="form-group"><label class="form-label">Mật khẩu</label><input id="login-password" type="password" class="form-input" placeholder="••••••••"></div>
+        <button class="btn btn-primary" style="width:100%" id="login-btn" onclick="doLogin()">Đăng nhập</button>
+      </div>
+      <div class="form-panel" id="panel-register">
+        <div class="form-group"><label class="form-label">Email</label><input id="reg-email" type="email" class="form-input" placeholder="email@example.com"></div>
+        <div class="form-group"><label class="form-label">Mật khẩu</label><input id="reg-password" type="password" class="form-input" placeholder="Tối thiểu 6 ký tự"></div>
+        <div class="form-group">
+          <label class="form-label">Gemini API Key</label>
+          <input id="reg-apikey" type="password" class="form-input" placeholder="AIza...">
+          <div class="form-hint">Lấy key miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">Google AI Studio</a></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%" id="reg-btn" onclick="doRegister()">Tạo tài khoản</button>
+      </div>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+  <script>
+    redirectIfLoggedIn();
+    if (getParam('tab') === 'register') switchTab('register');
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.getElementById('panel-' + tab).classList.add('active');
+    }
+
+    async function doLogin() {
+      const btn = document.getElementById('login-btn');
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!email || !password) return showToast('Nhập đầy đủ email và mật khẩu', 'error');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Đang đăng nhập...';
+      const r = await apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      btn.disabled = false; btn.textContent = 'Đăng nhập';
+      if (r && r.ok) { Auth.setToken((await r.json()).access_token); window.location.href = '/dashboard.html'; }
+      else { const e = r ? await r.json() : {}; showToast(e.detail || 'Đăng nhập thất bại', 'error'); }
+    }
+
+    async function doRegister() {
+      const btn = document.getElementById('reg-btn');
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const apiKey = document.getElementById('reg-apikey').value.trim();
+      if (!email || !password) return showToast('Nhập đầy đủ email và mật khẩu', 'error');
+      if (password.length < 6) return showToast('Mật khẩu tối thiểu 6 ký tự', 'error');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Đang tạo tài khoản...';
+      const r = await apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) });
+      btn.disabled = false; btn.textContent = 'Tạo tài khoản';
+      if (r && r.ok) {
+        Auth.setToken((await r.json()).access_token);
+        if (apiKey) await apiFetch('/auth/api-key', { method: 'PUT', body: JSON.stringify({ gemini_api_key: apiKey }) });
+        window.location.href = '/create.html';
+      } else { const e = r ? await r.json() : {}; showToast(e.detail || 'Đăng ký thất bại', 'error'); }
+    }
+  </script>
+</body>
+</html>
