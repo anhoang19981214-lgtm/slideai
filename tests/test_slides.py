@@ -112,3 +112,90 @@ def test_export_wrong_user(client):
 
     r = client.get(f"/slides/export/{slide_id}", headers={"Authorization": f"Bearer {token_b}"})
     assert r.status_code == 403
+
+
+def test_history(client):
+    token = _register_and_get_token(client)
+    mock_response = MagicMock()
+    mock_response.text = json.dumps(MOCK_SLIDES)
+
+    with patch("backend.slides.genai.GenerativeModel") as mock_model_cls:
+        mock_model_cls.return_value.generate_content.return_value = mock_response
+        client.post(
+            "/slides/generate",
+            json={"topic": "Topic A", "slide_count": 5, "language": "vi", "theme": "blue"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    r = client.get("/slides/history", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) == 1
+    assert items[0]["title"] == "Topic A"
+    assert "content_json" not in items[0]
+
+
+def test_get_slide_by_id(client):
+    token = _register_and_get_token(client)
+    mock_response = MagicMock()
+    mock_response.text = json.dumps(MOCK_SLIDES)
+
+    with patch("backend.slides.genai.GenerativeModel") as mock_model_cls:
+        mock_model_cls.return_value.generate_content.return_value = mock_response
+        gen_r = client.post(
+            "/slides/generate",
+            json={"topic": "Topic B", "slide_count": 5, "language": "en", "theme": "pink"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    slide_id = gen_r.json()["slide_id"]
+
+    r = client.get(f"/slides/{slide_id}", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["title"] == "Topic B"
+    assert len(data["slides"]) == 3
+    assert "content_json" not in data
+
+
+def test_delete_slide(client):
+    token = _register_and_get_token(client)
+    mock_response = MagicMock()
+    mock_response.text = json.dumps(MOCK_SLIDES)
+
+    with patch("backend.slides.genai.GenerativeModel") as mock_model_cls:
+        mock_model_cls.return_value.generate_content.return_value = mock_response
+        gen_r = client.post(
+            "/slides/generate",
+            json={"topic": "To delete", "slide_count": 5, "language": "vi", "theme": "green"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    slide_id = gen_r.json()["slide_id"]
+
+    r = client.delete(f"/slides/{slide_id}", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+
+    r = client.get("/slides/history", headers={"Authorization": f"Bearer {token}"})
+    assert len(r.json()) == 0
+
+
+def test_delete_wrong_user(client):
+    r1 = client.post("/auth/register", json={"email": "owner@t.com", "password": "pass123"})
+    token_owner = r1.json()["access_token"]
+    client.put("/auth/api-key", json={"gemini_api_key": "AIzaFake"}, headers={"Authorization": f"Bearer {token_owner}"})
+
+    r2 = client.post("/auth/register", json={"email": "other@t.com", "password": "pass123"})
+    token_other = r2.json()["access_token"]
+
+    mock_response = MagicMock()
+    mock_response.text = json.dumps(MOCK_SLIDES)
+    with patch("backend.slides.genai.GenerativeModel") as mock_model_cls:
+        mock_model_cls.return_value.generate_content.return_value = mock_response
+        gen_r = client.post(
+            "/slides/generate",
+            json={"topic": "Secret", "slide_count": 5, "language": "vi", "theme": "purple"},
+            headers={"Authorization": f"Bearer {token_owner}"},
+        )
+    slide_id = gen_r.json()["slide_id"]
+
+    r = client.delete(f"/slides/{slide_id}", headers={"Authorization": f"Bearer {token_other}"})
+    assert r.status_code == 403
