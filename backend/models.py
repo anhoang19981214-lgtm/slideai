@@ -13,7 +13,7 @@ class User(Base):
     gemini_api_key_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    slides: Mapped[list["Slide"]] = relationship("Slide", back_populates="user")
+    slides: Mapped[list["Slide"]] = relationship("Slide", back_populates="user", cascade="all, delete-orphan")
 
 
 class Slide(Base):
