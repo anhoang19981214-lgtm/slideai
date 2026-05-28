@@ -26,6 +26,12 @@
     .dropzone:hover, .dropzone.drag { border-color:var(--accent); background:rgba(167,139,250,0.1); }
     .dropzone.has-file { border-color:#4ade80; background:rgba(74,222,128,0.06); }
     .file-info { display:flex; align-items:center; gap:10px; margin-top:12px; padding:10px 14px; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.25); border-radius:8px; }
+    .tpl-gallery { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; margin-bottom:20px; }
+    .tpl-card { min-width:140px; border:2px solid var(--border); border-radius:10px; overflow:hidden; cursor:pointer; transition:all .2s; flex-shrink:0; }
+    .tpl-card.active { border-color:var(--accent); box-shadow:0 0 16px rgba(167,139,250,0.35); }
+    .tpl-card:hover:not(.active) { border-color:rgba(167,139,250,0.4); }
+    .tpl-preview { width:140px; height:78px; position:relative; overflow:hidden; }
+    .tpl-label { padding:7px 8px; font-size:11px; font-weight:700; color:var(--text); background:var(--card-bg); text-align:center; }
   </style>
 </head>
 <body>
@@ -55,6 +61,70 @@
           <div style="display:flex;gap:10px;align-items:center;">
             <input id="apikey-input" type="password" class="form-input" placeholder="AIza..." style="flex:1">
             <button class="btn btn-primary" onclick="saveApiKey()">Lưu</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <div class="form-label" style="margin-bottom:10px;">🎨 Mẫu thiết kế</div>
+          <div class="tpl-gallery">
+            <div class="tpl-card active" data-tpl="vibrant" onclick="selectTemplate(this)">
+              <div class="tpl-preview" style="background:linear-gradient(135deg,#0a0618,#150d35);">
+                <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,0.3),transparent 70%);"></div>
+                <div style="position:absolute;inset:0;background:url(&quot;data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='10' cy='10' r='0.8' fill='%23ffffff' fill-opacity='0.05'/%3E%3C/svg%3E&quot;);"></div>
+                <div style="position:absolute;top:20px;left:12px;right:12px;height:10px;background:rgba(255,255,255,0.85);border-radius:2px;"></div>
+                <div style="position:absolute;top:36px;left:12px;width:65%;height:6px;background:rgba(255,255,255,0.4);border-radius:2px;"></div>
+              </div>
+              <div class="tpl-label">Vibrant</div>
+            </div>
+            <div class="tpl-card" data-tpl="split" onclick="selectTemplate(this)">
+              <div class="tpl-preview" style="display:flex;">
+                <div style="width:40%;background:#7c3aed;position:relative;display:flex;flex-direction:column;justify-content:center;padding:6px;">
+                  <div style="height:7px;background:rgba(255,255,255,0.9);border-radius:1px;margin-bottom:5px;"></div>
+                  <div style="height:5px;background:rgba(255,255,255,0.5);border-radius:1px;width:70%;"></div>
+                </div>
+                <div style="width:60%;background:#0a0a1a;position:relative;display:flex;align-items:center;justify-content:center;">
+                  <div style="font-size:28px;font-weight:900;color:rgba(255,255,255,0.08);line-height:1;">01</div>
+                  <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.1);"></div>
+                </div>
+              </div>
+              <div class="tpl-label">Split</div>
+            </div>
+            <div class="tpl-card" data-tpl="minimal" onclick="selectTemplate(this)">
+              <div class="tpl-preview" style="background:#f4f4f8;position:relative;">
+                <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:#8b5cf6;"></div>
+                <div style="position:absolute;top:22px;left:14px;right:12px;height:9px;background:#1a1a2e;border-radius:2px;opacity:0.85;"></div>
+                <div style="position:absolute;top:37px;left:14px;width:55%;height:6px;background:#1a1a2e;border-radius:2px;opacity:0.4;"></div>
+              </div>
+              <div class="tpl-label">Minimal</div>
+            </div>
+            <div class="tpl-card" data-tpl="bold" onclick="selectTemplate(this)">
+              <div class="tpl-preview" style="background:#7c3aed;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;">
+                <div style="height:14px;background:rgba(255,255,255,0.95);border-radius:2px;width:80%;margin-bottom:6px;"></div>
+                <div style="height:7px;background:rgba(255,255,255,0.55);border-radius:2px;width:55%;"></div>
+                <div style="position:absolute;bottom:6px;right:8px;font-size:16px;font-weight:900;color:rgba(255,255,255,0.2);">01</div>
+              </div>
+              <div class="tpl-label">Bold</div>
+            </div>
+            <div class="tpl-card" data-tpl="glass" onclick="selectTemplate(this)">
+              <div class="tpl-preview" style="background:linear-gradient(135deg,#080818,#0d1529);position:relative;display:flex;align-items:center;justify-content:center;">
+                <div style="position:absolute;top:-10px;right:-10px;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,0.25),transparent 70%);"></div>
+                <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 14px;width:75%;text-align:center;">
+                  <div style="height:7px;background:rgba(255,255,255,0.8);border-radius:2px;margin-bottom:5px;"></div>
+                  <div style="height:5px;background:rgba(255,255,255,0.35);border-radius:2px;width:70%;margin:0 auto;"></div>
+                </div>
+              </div>
+              <div class="tpl-label">Glass</div>
+            </div>
+            <div class="tpl-card" data-tpl="tech" onclick="selectTemplate(this)">
+              <div class="tpl-preview" style="background:#030c08;position:relative;overflow:hidden;">
+                <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,136,0.03) 3px,rgba(0,255,136,0.03) 4px);"></div>
+                <div style="position:absolute;top:14px;left:10px;font-size:6px;color:#00ff88;letter-spacing:1px;font-family:monospace;">[SLIDEAI]</div>
+                <div style="position:absolute;top:26px;left:10px;right:10px;height:8px;background:rgba(0,255,136,0.7);border-radius:1px;"></div>
+                <div style="position:absolute;top:40px;left:10px;width:60%;height:5px;background:rgba(0,255,136,0.3);border-radius:1px;"></div>
+                <div style="position:absolute;bottom:10px;left:10px;font-size:7px;color:rgba(0,255,136,0.5);font-family:monospace;">// subtitle</div>
+              </div>
+              <div class="tpl-label">Tech</div>
+            </div>
           </div>
         </div>
 
@@ -141,6 +211,7 @@
   <script>
     requireAuth();
     let selectedTheme = 'purple';
+    let selectedTemplate = 'vibrant';
     let hasApiKey = false;
     let currentMode = 'topic';
     let selectedFile = null;
@@ -192,6 +263,12 @@
       selectedTheme = el.dataset.theme;
     }
 
+    function selectTemplate(el) {
+      document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      selectedTemplate = el.dataset.tpl;
+    }
+
     async function saveApiKey() {
       const key = document.getElementById('apikey-input').value.trim();
       if (!key) return showToast('Nhập API key', 'error');
@@ -215,6 +292,7 @@
           fd.append('slide_count', slideCount);
           fd.append('language', document.getElementById('language').value);
           fd.append('theme', selectedTheme);
+          fd.append('template', selectedTemplate);
           r = await apiFetch('/slides/generate-from-file', { method: 'POST', body: fd });
         } else {
           const topic = document.getElementById('topic').value.trim();
@@ -225,6 +303,7 @@
             slide_count: slideCount,
             language: document.getElementById('language').value,
             theme: selectedTheme,
+            template: selectedTemplate,
           };
           r = await apiFetch('/slides/generate', { method: 'POST', body: JSON.stringify(body) });
         }

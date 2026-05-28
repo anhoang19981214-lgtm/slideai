@@ -30,6 +30,8 @@
     /* Fullscreen button */
     .fs-btn { position:absolute; bottom:16px; right:16px; z-index:100; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; backdrop-filter:blur(4px); transition:all .2s; }
     .fs-btn:hover { background:rgba(255,255,255,0.15); }
+    @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+    .cursor-blink { animation: blink 1s step-end infinite; }
   </style>
 </head>
 <body>
@@ -91,24 +93,20 @@
       if (!r || !r.ok) { showToast('Không tìm thấy slide', 'error'); setTimeout(() => window.location.href = '/dashboard.html', 2000); return; }
       const data = await r.json();
       if (!Array.isArray(data.slides)) { showToast('Dữ liệu slide không hợp lệ', 'error'); return; }
-      renderSlides(data.slides, THEMES[data.theme] || THEMES.purple);
+      renderSlides(data.slides, THEMES[data.theme] || THEMES.purple, data.template || 'vibrant');
     })();
 
-    /* ── SLIDE BUILDERS ── */
-    function buildCover(s, c, idx) {
+    /* ── VIBRANT BUILDERS ── */
+    function buildVibrantCover(s, c, idx) {
       return `
         <div class="slide-root" style="background:linear-gradient(135deg,${c.bg1} 0%,${c.bg2} 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 80px;">
-          <!-- dot pattern -->
           <div style="position:absolute;inset:0;background:${DOT_PATTERN};z-index:0;"></div>
-          <!-- glow blobs -->
           <div style="position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,${c.accent}25 0%,transparent 65%);top:-200px;right:-200px;z-index:0;"></div>
           <div style="position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,${c.accent}15 0%,transparent 65%);bottom:-150px;left:-100px;z-index:0;"></div>
-          <!-- corner brackets -->
           <div style="position:absolute;top:24px;left:24px;width:40px;height:40px;border-top:2px solid ${c.accent}50;border-left:2px solid ${c.accent}50;border-radius:3px;z-index:1;"></div>
           <div style="position:absolute;top:24px;right:24px;width:40px;height:40px;border-top:2px solid ${c.accent}50;border-right:2px solid ${c.accent}50;border-radius:3px;z-index:1;"></div>
           <div style="position:absolute;bottom:24px;left:24px;width:40px;height:40px;border-bottom:2px solid ${c.accent}50;border-left:2px solid ${c.accent}50;border-radius:3px;z-index:1;"></div>
           <div style="position:absolute;bottom:24px;right:24px;width:40px;height:40px;border-bottom:2px solid ${c.accent}50;border-right:2px solid ${c.accent}50;border-radius:3px;z-index:1;"></div>
-          <!-- content -->
           <div style="position:relative;z-index:2;width:100%;">
             <div style="display:inline-flex;align-items:center;gap:8px;background:${c.accent}18;border:1px solid ${c.accent}35;border-radius:50px;padding:7px 20px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:${c.accent};margin-bottom:36px;">
               <span style="width:6px;height:6px;border-radius:50%;background:${c.accent};display:inline-block;"></span>PRESENTATION
@@ -117,84 +115,303 @@
             <div style="width:70px;height:4px;background:linear-gradient(90deg,${c.accent},${c.accent2});border-radius:2px;margin:0 auto 24px;"></div>
             <p style="font-size:clamp(1em,1.8vw,1.3em);color:${c.text};opacity:0.85;max-width:680px;margin:0 auto;line-height:1.7;">${esc(s.subtitle || '')}</p>
           </div>
-          <!-- bottom dots -->
           <div style="position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2;">
             <div style="width:8px;height:8px;border-radius:50%;background:${c.accent};"></div>
             <div style="width:8px;height:8px;border-radius:50%;background:${c.accent}70;"></div>
             <div style="width:8px;height:8px;border-radius:50%;background:${c.accent}35;"></div>
           </div>
-          <!-- bottom line -->
           <div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,transparent 0%,${c.accent} 30%,${c.accent2} 70%,transparent 100%);"></div>
         </div>`;
     }
 
-    function buildContent(s, c, idx) {
+    function buildVibrantContent(s, c, idx) {
       const bullets = s.bullets || [];
       const cols = bullets.length >= 4 ? '1fr 1fr' : '1fr';
       const bulletCards = bullets.map((b, i) => `
-        <div style="background:${c.accent}10;border:1px solid ${c.accent}22;border-left:3px solid ${c.accent};border-radius:10px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;transition:all .2s;">
+        <div style="background:${c.accent}10;border:1px solid ${c.accent}22;border-left:3px solid ${c.accent};border-radius:10px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;">
           <div style="min-width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,${c.accent},${c.accent2});display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;">${String(i+1).padStart(2,'0')}</div>
           <span style="color:${c.text};font-size:clamp(0.78em,1.4vw,1em);line-height:1.55;padding-top:5px;">${esc(b)}</span>
         </div>`).join('');
-
       return `
         <div class="slide-root" style="background:linear-gradient(150deg,${c.bg1} 0%,${c.bg2} 100%);">
-          <!-- dot pattern -->
           <div style="position:absolute;inset:0;background:${DOT_PATTERN};z-index:0;"></div>
-          <!-- left accent bar -->
           <div style="position:absolute;top:0;left:0;width:6px;height:100%;background:linear-gradient(180deg,${c.accent},${c.accent2});z-index:1;"></div>
-          <!-- large watermark number -->
           <div style="position:absolute;top:-10px;right:20px;font-size:clamp(80px,12vw,140px);font-weight:900;color:${c.accent}08;line-height:1;z-index:0;user-select:none;">${String(idx).padStart(2,'0')}</div>
-          <!-- top-right glow -->
           <div style="position:absolute;top:0;right:0;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,${c.accent}12 0%,transparent 70%);transform:translate(40%,-40%);z-index:0;"></div>
-
-          <!-- content -->
           <div style="position:relative;z-index:2;padding:44px 60px 36px 72px;height:100%;display:flex;flex-direction:column;">
-            <!-- title area -->
             <div style="margin-bottom:28px;">
               <div style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:${c.accent};margin-bottom:10px;font-weight:600;">SLIDE ${String(idx).padStart(2,'0')}</div>
               <h2 style="font-size:clamp(1.3em,3vw,2.1em);font-weight:800;color:#fff;line-height:1.2;margin:0 0 14px;max-width:85%;">${esc(s.title)}</h2>
               <div style="width:48px;height:3px;background:linear-gradient(90deg,${c.accent},${c.accent2});border-radius:2px;"></div>
             </div>
-            <!-- bullets -->
             <div style="display:grid;grid-template-columns:${cols};gap:12px;flex:1;align-content:start;">${bulletCards}</div>
           </div>
-          <!-- bottom bar -->
           <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${c.accent} 0%,${c.accent2} 50%,transparent 100%);"></div>
         </div>`;
     }
 
-    function buildConclusion(s, c, idx) {
+    function buildVibrantConclusion(s, c, idx) {
       return `
         <div class="slide-root" style="background:linear-gradient(135deg,${c.bg1} 0%,${c.bg2} 100%);display:flex;align-items:center;justify-content:center;text-align:center;">
-          <!-- dot pattern -->
           <div style="position:absolute;inset:0;background:${DOT_PATTERN};z-index:0;"></div>
-          <!-- concentric rings -->
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:580px;height:580px;border-radius:50%;border:1px solid ${c.accent}12;z-index:0;"></div>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;height:400px;border-radius:50%;border:1px solid ${c.accent}18;z-index:0;"></div>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,${c.accent}18 0%,transparent 70%);z-index:0;"></div>
-          <!-- corner brackets -->
           <div style="position:absolute;top:24px;left:24px;width:40px;height:40px;border-top:2px solid ${c.accent}40;border-left:2px solid ${c.accent}40;border-radius:3px;z-index:1;"></div>
           <div style="position:absolute;bottom:24px;right:24px;width:40px;height:40px;border-bottom:2px solid ${c.accent}40;border-right:2px solid ${c.accent}40;border-radius:3px;z-index:1;"></div>
-
-          <!-- content -->
           <div style="position:relative;z-index:2;padding:60px;max-width:800px;">
-            <!-- icon circle -->
             <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,${c.accent},${c.accent2});display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 28px;box-shadow:0 0 50px ${c.accent}40;">✦</div>
             <h2 style="font-size:clamp(1.6em,3.5vw,2.8em);font-weight:900;background:linear-gradient(135deg,#fff 20%,${c.accent2});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0 0 18px;line-height:1.15;">${esc(s.title)}</h2>
             <div style="width:60px;height:4px;background:linear-gradient(90deg,${c.accent},${c.accent2});border-radius:2px;margin:0 auto 22px;"></div>
             <p style="font-size:clamp(0.95em,1.8vw,1.2em);color:${c.text};opacity:0.88;line-height:1.75;font-style:italic;">${esc(s.summary || '')}</p>
-            <!-- bottom dots -->
             <div style="display:flex;gap:8px;justify-content:center;margin-top:36px;">
               <div style="width:8px;height:8px;border-radius:50%;background:${c.accent}35;"></div>
               <div style="width:8px;height:8px;border-radius:50%;background:${c.accent}70;"></div>
               <div style="width:8px;height:8px;border-radius:50%;background:${c.accent};"></div>
             </div>
           </div>
-          <!-- bottom line -->
           <div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,transparent 0%,${c.accent} 30%,${c.accent2} 70%,transparent 100%);"></div>
         </div>`;
     }
+
+    /* ── SPLIT BUILDERS ── */
+    function buildSplitCover(s, c, idx) {
+      return `
+        <div class="slide-root" style="display:flex;flex-direction:row;">
+          <div style="width:42%;background:linear-gradient(160deg,${c.accent},${c.accent2});display:flex;flex-direction:column;justify-content:center;padding:50px 40px;">
+            <h1 style="font-size:clamp(1.4em,3vw,2.6em);font-weight:900;color:#fff;line-height:1.15;margin:0 0 16px;">${esc(s.title)}</h1>
+            <div style="width:40px;height:3px;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:14px;"></div>
+            <p style="font-size:clamp(0.85em,1.4vw,1.05em);color:rgba(255,255,255,0.85);line-height:1.65;">${esc(s.subtitle || '')}</p>
+          </div>
+          <div style="width:58%;background:${c.bg1};position:relative;display:flex;align-items:center;justify-content:center;">
+            <div style="font-size:10em;font-weight:900;color:rgba(255,255,255,0.06);line-height:1;user-select:none;">${String(idx).padStart(2,'0')}</div>
+            <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.08);"></div>
+          </div>
+        </div>`;
+    }
+
+    function buildSplitContent(s, c, idx) {
+      const bullets = s.bullets || [];
+      const bulletItems = bullets.map(b => `
+        <div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:flex-start;gap:10px;">
+          <span style="color:${c.accent};font-size:1.1em;flex-shrink:0;margin-top:1px;">›</span>
+          <span style="color:${c.text};font-size:clamp(0.82em,1.4vw,1em);line-height:1.55;">${esc(b)}</span>
+        </div>`).join('');
+      return `
+        <div class="slide-root" style="display:flex;flex-direction:row;">
+          <div style="width:28%;background:linear-gradient(180deg,${c.accent}22,${c.accent}08);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;border-right:1px solid ${c.accent}20;">
+            <div style="writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);font-size:9px;letter-spacing:4px;text-transform:uppercase;color:${c.accent}60;margin-bottom:20px;">SLIDE</div>
+            <div style="font-size:3em;font-weight:900;color:${c.accent};line-height:1;">${String(idx).padStart(2,'0')}</div>
+          </div>
+          <div style="width:72%;background:${c.bg2};padding:44px 50px;display:flex;flex-direction:column;justify-content:center;">
+            <h2 style="font-size:clamp(1.2em,2.5vw,2em);font-weight:800;color:#fff;margin:0 0 10px;line-height:1.2;">${esc(s.title)}</h2>
+            <div style="width:36px;height:3px;background:linear-gradient(90deg,${c.accent},${c.accent2});border-radius:2px;margin-bottom:20px;"></div>
+            <div>${bulletItems}</div>
+          </div>
+        </div>`;
+    }
+
+    function buildSplitConclusion(s, c, idx) {
+      return `
+        <div class="slide-root" style="display:flex;flex-direction:row;">
+          <div style="width:50%;background:${c.bg1};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px;text-align:center;">
+            <div style="font-size:2.5em;color:${c.accent};margin-bottom:20px;">✦</div>
+            <h2 style="font-size:clamp(1.3em,2.8vw,2.2em);font-weight:900;color:${c.accent};line-height:1.2;margin:0;">${esc(s.title)}</h2>
+          </div>
+          <div style="width:50%;background:linear-gradient(160deg,${c.accent},${c.accent2});display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px;text-align:center;">
+            <p style="font-size:clamp(0.9em,1.6vw,1.15em);color:#fff;line-height:1.75;font-style:italic;">${esc(s.summary || '')}</p>
+          </div>
+        </div>`;
+    }
+
+    /* ── MINIMAL BUILDERS ── */
+    function buildMinimalCover(s, c, idx) {
+      const mc = { bg:'#f4f4f8', text:'#1a1a2e', muted:'#6b6b8a' };
+      return `
+        <div class="slide-root" style="background:${mc.bg};display:flex;flex-direction:column;justify-content:flex-end;padding:60px 70px;">
+          <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:${c.accent};"></div>
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${c.accent};"></div>
+          <h1 style="font-size:clamp(1.8em,4vw,3.8em);font-weight:900;color:${mc.text};line-height:1.1;margin:0 0 20px;">${esc(s.title)}</h1>
+          <div style="width:60px;height:2px;background:${c.accent};margin-bottom:18px;"></div>
+          <p style="font-size:clamp(0.95em,1.6vw,1.2em);color:${mc.muted};line-height:1.7;max-width:620px;">${esc(s.subtitle || '')}</p>
+          <div style="position:absolute;bottom:40px;right:60px;font-size:11px;color:${mc.muted};letter-spacing:2px;text-transform:uppercase;">${String(idx).padStart(2,'0')}</div>
+        </div>`;
+    }
+
+    function buildMinimalContent(s, c, idx) {
+      const mc = { bg:'#f4f4f8', text:'#1a1a2e', muted:'#6b6b8a' };
+      const bullets = s.bullets || [];
+      const bulletItems = bullets.map((b, i) => `
+        <div style="display:flex;align-items:flex-start;gap:16px;padding:14px 0;border-bottom:1px solid rgba(0,0,0,0.07);">
+          <span style="font-size:12px;font-weight:800;color:${c.accent};min-width:24px;padding-top:2px;">${String(i+1).padStart(2,'0')}</span>
+          <span style="color:${mc.text};font-size:clamp(0.88em,1.5vw,1.05em);line-height:1.6;">${esc(b)}</span>
+        </div>`).join('');
+      return `
+        <div class="slide-root" style="background:${mc.bg};padding:0;">
+          <div style="height:3px;background:${c.accent};position:absolute;top:0;left:0;right:0;z-index:1;"></div>
+          <div style="position:relative;z-index:2;padding:48px 70px 40px;height:100%;display:flex;flex-direction:column;">
+            <div style="margin-bottom:30px;">
+              <div style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:${c.accent};margin-bottom:8px;font-weight:700;">SLIDE ${String(idx).padStart(2,'0')}</div>
+              <h2 style="font-size:clamp(1.3em,2.8vw,2.2em);font-weight:900;color:${mc.text};margin:0;line-height:1.2;">${esc(s.title)}</h2>
+            </div>
+            <div style="flex:1;">${bulletItems}</div>
+          </div>
+        </div>`;
+    }
+
+    function buildMinimalConclusion(s, c, idx) {
+      const mc = { bg:'#f4f4f8', text:'#1a1a2e', muted:'#6b6b8a' };
+      return `
+        <div class="slide-root" style="background:${mc.bg};display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 80px;position:relative;">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${c.accent};"></div>
+          <div style="font-size:5em;color:${c.accent};opacity:0.15;line-height:1;position:absolute;top:60px;left:60px;font-family:Georgia,serif;">"</div>
+          <h2 style="font-size:clamp(1.6em,3.5vw,2.8em);font-weight:900;color:${mc.text};margin:0 0 20px;line-height:1.15;">${esc(s.title)}</h2>
+          <div style="width:40px;height:2px;background:${c.accent};margin-bottom:20px;"></div>
+          <p style="font-size:clamp(0.95em,1.7vw,1.15em);color:${mc.muted};line-height:1.8;font-style:italic;max-width:680px;">${esc(s.summary || '')}</p>
+        </div>`;
+    }
+
+    /* ── BOLD BUILDERS ── */
+    function buildBoldCover(s, c, idx) {
+      return `
+        <div class="slide-root" style="background:linear-gradient(135deg,${c.accent},${c.accent2});display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 80px;">
+          <h1 style="font-size:clamp(2.5em,6vw,5em);font-weight:900;color:#fff;line-height:1.05;margin:0 0 24px;text-shadow:0 4px 20px rgba(0,0,0,0.2);">${esc(s.title)}</h1>
+          <p style="font-size:clamp(1em,2vw,1.4em);color:rgba(255,255,255,0.85);line-height:1.6;max-width:700px;">${esc(s.subtitle || '')}</p>
+          <div style="position:absolute;bottom:30px;right:40px;font-size:clamp(3em,8vw,7em);font-weight:900;color:rgba(255,255,255,0.12);line-height:1;user-select:none;">${String(idx).padStart(2,'0')}</div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:6px;background:rgba(0,0,0,0.2);"></div>
+        </div>`;
+    }
+
+    function buildBoldContent(s, c, idx) {
+      const bullets = s.bullets || [];
+      const bulletItems = bullets.map(b => `
+        <div style="border-left:4px solid ${c.accent};padding:12px 0 12px 16px;font-size:clamp(0.9em,1.6vw,1.1em);color:${c.text};line-height:1.55;">
+          ${esc(b)}
+        </div>`).join('');
+      return `
+        <div class="slide-root" style="background:${c.bg1};padding:50px 65px;display:flex;flex-direction:column;">
+          <h2 style="font-size:clamp(1.8em,4vw,3em);font-weight:900;color:${c.accent};line-height:1.1;margin:0 0 28px;">${esc(s.title)}</h2>
+          <div style="display:flex;flex-direction:column;gap:8px;flex:1;justify-content:center;">${bulletItems}</div>
+          <div style="position:absolute;bottom:20px;right:30px;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:${c.accent}40;">SLIDE ${String(idx).padStart(2,'0')}</div>
+        </div>`;
+    }
+
+    function buildBoldConclusion(s, c, idx) {
+      return `
+        <div class="slide-root" style="background:linear-gradient(135deg,${c.accent},${c.accent2});display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 80px;">
+          <h2 style="font-size:clamp(2em,4.5vw,4em);font-weight:900;color:#fff;line-height:1.1;margin:0 0 24px;text-shadow:0 4px 20px rgba(0,0,0,0.15);">${esc(s.title)}</h2>
+          <p style="font-size:clamp(1em,1.8vw,1.3em);color:rgba(255,255,255,0.88);line-height:1.7;max-width:700px;">${esc(s.summary || '')}</p>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:8px;background:${c.bg1};"></div>
+        </div>`;
+    }
+
+    /* ── GLASS BUILDERS ── */
+    function buildGlassCover(s, c, idx) {
+      return `
+        <div class="slide-root" style="background:linear-gradient(135deg,${c.bg1},${c.bg2});display:flex;align-items:center;justify-content:center;text-align:center;">
+          <div style="position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,${c.accent}20 0%,transparent 65%);top:-150px;right:-150px;z-index:0;"></div>
+          <div style="position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,${c.accent2}15 0%,transparent 65%);bottom:-100px;left:-100px;z-index:0;"></div>
+          <div style="position:relative;z-index:2;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:50px 60px;max-width:750px;">
+            <h1 style="font-size:clamp(1.6em,3.5vw,3em);font-weight:900;color:#fff;line-height:1.15;margin:0 0 16px;">${esc(s.title)}</h1>
+            <div style="width:60px;height:3px;background:linear-gradient(90deg,${c.accent},${c.accent2});border-radius:2px;margin:0 auto 18px;"></div>
+            <p style="font-size:clamp(0.9em,1.6vw,1.15em);color:rgba(255,255,255,0.75);line-height:1.7;">${esc(s.subtitle || '')}</p>
+          </div>
+        </div>`;
+    }
+
+    function buildGlassContent(s, c, idx) {
+      const bullets = s.bullets || [];
+      const bulletCards = bullets.map(b => `
+        <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 20px;color:${c.text};font-size:clamp(0.8em,1.4vw,1em);line-height:1.55;">
+          ${esc(b)}
+        </div>`).join('');
+      const cols = bullets.length >= 4 ? '1fr 1fr' : '1fr';
+      return `
+        <div class="slide-root" style="background:linear-gradient(150deg,${c.bg1},${c.bg2});padding:44px 60px 36px;">
+          <div style="position:absolute;top:0;right:0;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,${c.accent}10 0%,transparent 70%);transform:translate(30%,-30%);z-index:0;"></div>
+          <div style="position:absolute;top:20px;right:30px;font-size:11px;letter-spacing:3px;color:${c.accent}80;text-transform:uppercase;z-index:2;">${String(idx).padStart(2,'0')}</div>
+          <div style="position:relative;z-index:2;height:100%;display:flex;flex-direction:column;">
+            <div style="margin-bottom:24px;">
+              <h2 style="font-size:clamp(1.3em,2.8vw,2.1em);font-weight:800;color:#fff;margin:0 0 10px;line-height:1.2;">${esc(s.title)}</h2>
+              <div style="width:40px;height:2px;background:linear-gradient(90deg,${c.accent},${c.accent2});border-radius:2px;"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:${cols};gap:10px;flex:1;align-content:start;">${bulletCards}</div>
+          </div>
+        </div>`;
+    }
+
+    function buildGlassConclusion(s, c, idx) {
+      return `
+        <div class="slide-root" style="background:linear-gradient(135deg,${c.bg1},${c.bg2});display:flex;align-items:center;justify-content:center;text-align:center;">
+          <div style="position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,${c.accent}18 0%,transparent 65%);top:-100px;left:-100px;z-index:0;"></div>
+          <div style="position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,${c.accent2}12 0%,transparent 65%);bottom:-100px;right:-100px;z-index:0;"></div>
+          <div style="position:relative;z-index:2;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:50px 60px;max-width:750px;">
+            <div style="font-size:2em;color:${c.accent};margin-bottom:20px;">✦</div>
+            <h2 style="font-size:clamp(1.5em,3.2vw,2.6em);font-weight:900;color:#fff;margin:0 0 14px;line-height:1.15;">${esc(s.title)}</h2>
+            <div style="width:50px;height:2px;background:linear-gradient(90deg,${c.accent},${c.accent2});border-radius:2px;margin:0 auto 18px;"></div>
+            <p style="font-size:clamp(0.9em,1.6vw,1.1em);color:rgba(255,255,255,0.75);line-height:1.75;font-style:italic;">${esc(s.summary || '')}</p>
+          </div>
+        </div>`;
+    }
+
+    /* ── TECH BUILDERS ── */
+    function buildTechCover(s, c, idx) {
+      const tc = { bg:'#030c08', text:'#c8ffd4', accent:'#00ff88' };
+      return `
+        <div class="slide-root" style="background:${tc.bg};padding:50px 65px;display:flex;flex-direction:column;justify-content:center;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,136,0.02) 3px,rgba(0,255,136,0.02) 4px);z-index:0;"></div>
+          <div style="position:relative;z-index:2;">
+            <div style="font-size:11px;color:${tc.accent};letter-spacing:2px;font-family:monospace;margin-bottom:24px;">[SLIDEAI_SYSTEM] :: PRESENTATION_${String(idx).padStart(2,'0')}</div>
+            <h1 style="font-size:clamp(1.8em,4vw,3.5em);font-weight:700;color:${tc.text};line-height:1.15;margin:0 0 12px;letter-spacing:2px;font-family:monospace;">&gt; ${esc(s.title)}<span class="cursor-blink" style="color:${tc.accent};">|</span></h1>
+            <p style="font-size:clamp(0.9em,1.6vw,1.15em);color:rgba(200,255,212,0.55);font-family:monospace;letter-spacing:1px;">// ${esc(s.subtitle || '')}</p>
+          </div>
+          <div style="position:absolute;bottom:30px;right:50px;z-index:2;font-size:9px;color:${tc.accent}50;font-family:monospace;letter-spacing:2px;">READY_TO_EXECUTE</div>
+        </div>`;
+    }
+
+    function buildTechContent(s, c, idx) {
+      const tc = { bg:'#030c08', text:'#c8ffd4', accent:'#00ff88' };
+      const bullets = s.bullets || [];
+      const bulletItems = bullets.map((b, i) => `
+        <div style="padding:10px 14px;font-family:monospace;font-size:clamp(0.8em,1.35vw,0.98em);color:${tc.text};line-height:1.55;">
+          <span style="color:${tc.accent};font-weight:700;">[${String(i+1).padStart(2,'0')}]</span> ${esc(b)}
+        </div>`).join('');
+      return `
+        <div class="slide-root" style="background:${tc.bg};display:flex;flex-direction:column;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,136,0.02) 3px,rgba(0,255,136,0.02) 4px);z-index:0;"></div>
+          <div style="background:rgba(0,255,136,0.06);border-bottom:1px solid ${tc.accent}40;padding:14px 50px;font-family:monospace;font-size:12px;color:${tc.accent};letter-spacing:1px;position:relative;z-index:2;">// SLIDE_${String(idx).padStart(2,'0')} :: ${esc(s.title)}</div>
+          <div style="position:relative;z-index:2;padding:24px 50px;flex:1;display:flex;flex-direction:column;justify-content:center;">
+            <div style="border:1px solid ${tc.accent}30;border-radius:4px;overflow:hidden;">
+              ${bulletItems}
+            </div>
+          </div>
+          <div style="position:relative;z-index:2;padding:10px 50px 16px;font-family:monospace;font-size:10px;color:${tc.accent}40;letter-spacing:1px;">END_BLOCK_${String(idx).padStart(2,'0')}</div>
+        </div>`;
+    }
+
+    function buildTechConclusion(s, c, idx) {
+      const tc = { bg:'#030c08', text:'#c8ffd4', accent:'#00ff88' };
+      return `
+        <div class="slide-root" style="background:${tc.bg};display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 80px;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,136,0.02) 3px,rgba(0,255,136,0.02) 4px);z-index:0;"></div>
+          <div style="position:relative;z-index:2;width:100%;">
+            <div style="font-size:11px;color:${tc.accent};font-family:monospace;letter-spacing:2px;margin-bottom:28px;">PROCESS.COMPLETE();</div>
+            <h2 style="font-size:clamp(1.6em,3.5vw,3em);font-weight:700;color:${tc.text};font-family:monospace;letter-spacing:2px;margin:0 0 20px;">{${esc(s.title)}}</h2>
+            <p style="font-size:clamp(0.9em,1.6vw,1.1em);color:rgba(200,255,212,0.55);font-family:monospace;font-style:italic;line-height:1.7;max-width:680px;margin:0 auto 30px;">/* ${esc(s.summary || '')} */</p>
+            <div style="font-size:1.5em;color:${tc.accent};"><span class="cursor-blink">█</span></div>
+          </div>
+        </div>`;
+    }
+
+    /* ── TEMPLATE REGISTRY ── */
+    const TEMPLATES = {
+      vibrant: { cover: buildVibrantCover, content: buildVibrantContent, conclusion: buildVibrantConclusion },
+      split:   { cover: buildSplitCover,   content: buildSplitContent,   conclusion: buildSplitConclusion   },
+      minimal: { cover: buildMinimalCover, content: buildMinimalContent, conclusion: buildMinimalConclusion },
+      bold:    { cover: buildBoldCover,    content: buildBoldContent,    conclusion: buildBoldConclusion    },
+      glass:   { cover: buildGlassCover,   content: buildGlassContent,   conclusion: buildGlassConclusion   },
+      tech:    { cover: buildTechCover,    content: buildTechContent,    conclusion: buildTechConclusion    },
+    };
 
     /* ── THUMBNAILS ── */
     function buildThumb(s, c, i) {
@@ -208,7 +425,8 @@
     }
 
     /* ── MAIN RENDER ── */
-    function renderSlides(slides, c) {
+    function renderSlides(slides, c, tplName) {
+      const tpl = TEMPLATES[tplName] || TEMPLATES.vibrant;
       const container = document.getElementById('slides-container');
       const thumbs = document.getElementById('thumbnails');
       container.innerHTML = ''; thumbs.innerHTML = '';
@@ -216,9 +434,9 @@
       slides.forEach((s, i) => {
         const section = document.createElement('section');
         let html = '';
-        if (s.type === 'cover') html = buildCover(s, c, i + 1);
-        else if (s.type === 'content') html = buildContent(s, c, i + 1);
-        else if (s.type === 'conclusion') html = buildConclusion(s, c, i + 1);
+        if (s.type === 'cover') html = tpl.cover(s, c, i + 1);
+        else if (s.type === 'content') html = tpl.content(s, c, i + 1);
+        else if (s.type === 'conclusion') html = tpl.conclusion(s, c, i + 1);
         section.innerHTML = html;
         container.appendChild(section);
 

@@ -101,6 +101,7 @@ def _generate_slides(
 
 
 VALID_THEMES = {"purple", "pink", "blue", "green", "sunset"}
+VALID_TEMPLATES = {"vibrant", "split", "minimal", "bold", "glass", "tech"}
 
 class GenerateBody(BaseModel):
     topic: str = Field(min_length=1, max_length=200)
@@ -108,12 +109,20 @@ class GenerateBody(BaseModel):
     slide_count: int = Field(ge=5, le=25)
     language: str = Field(default="vi", min_length=2, max_length=10)
     theme: str = Field(default="purple")
+    template: str = Field(default="vibrant")
 
     @field_validator("theme")
     @classmethod
     def theme_must_be_valid(cls, v: str) -> str:
         if v not in VALID_THEMES:
             raise ValueError(f"theme must be one of {sorted(VALID_THEMES)}")
+        return v
+
+    @field_validator("template")
+    @classmethod
+    def template_must_be_valid(cls, v: str) -> str:
+        if v not in VALID_TEMPLATES:
+            raise ValueError(f"template must be one of {sorted(VALID_TEMPLATES)}")
         return v
 
 
@@ -132,6 +141,7 @@ def history(user: User = Depends(get_current_user), db: Session = Depends(get_db
             "language": r.language,
             "slide_count": r.slide_count,
             "theme": r.theme,
+            "template": r.template or "vibrant",
             "created_at": r.created_at.isoformat(),
         }
         for r in records
@@ -177,6 +187,7 @@ def get_slide(
         "language": record.language,
         "slide_count": record.slide_count,
         "theme": record.theme,
+        "template": record.template or "vibrant",
         "created_at": record.created_at.isoformat(),
         "slides": json.loads(record.content_json),
     }
@@ -203,6 +214,7 @@ def generate(
         language=body.language,
         slide_count=body.slide_count,
         theme=body.theme,
+        template=body.template,
         content_json=json.dumps(slides, ensure_ascii=False),
     )
     db.add(record)
@@ -217,11 +229,14 @@ async def generate_from_file(
     slide_count: int = Form(default=10, ge=5, le=25),
     language: str = Form(default="vi"),
     theme: str = Form(default="purple"),
+    template: str = Form(default="vibrant"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if theme not in VALID_THEMES:
         raise HTTPException(status_code=422, detail=f"theme must be one of {sorted(VALID_THEMES)}")
+    if template not in VALID_TEMPLATES:
+        raise HTTPException(status_code=422, detail=f"template must be one of {sorted(VALID_TEMPLATES)}")
     if not user.gemini_api_key_enc:
         raise HTTPException(status_code=400, detail="No Gemini API key saved. Add it in account settings.")
 
@@ -261,6 +276,7 @@ async def generate_from_file(
         language=language,
         slide_count=slide_count,
         theme=theme,
+        template=template,
         content_json=json.dumps(slides, ensure_ascii=False),
     )
     db.add(record)

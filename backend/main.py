@@ -9,11 +9,24 @@ load_dotenv()
 from backend.database import Base, engine
 from backend.auth import router as auth_router
 from backend.slides import router as slides_router
+from sqlalchemy import text
 
 try:
     Base.metadata.create_all(bind=engine)
 except Exception:
     pass
+
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE slides ADD COLUMN IF NOT EXISTS template VARCHAR(50)"))
+        conn.commit()
+except Exception:
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE slides ADD COLUMN template VARCHAR(50)"))
+            conn.commit()
+    except Exception:
+        pass
 
 app = FastAPI(title="SlideAI")
 

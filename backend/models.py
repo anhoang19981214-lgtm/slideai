@@ -25,6 +25,7 @@ class Slide(Base):
     language: Mapped[str] = mapped_column(String, default="vi")
     slide_count: Mapped[int] = mapped_column(Integer)
     theme: Mapped[str] = mapped_column(String, default="purple")
+    template: Mapped[str | None] = mapped_column(String(50), nullable=True)
     content_json: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
