@@ -72,7 +72,7 @@ Respond with ONLY valid JSON array, no markdown fences, no explanation:
 
 def _call_gemini(api_key: str, prompt: str) -> list[dict]:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel("gemini-2.5-flash")
     response = model.generate_content(prompt)
     text = response.text.strip()
     if text.startswith("```"):
