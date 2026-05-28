@@ -70,7 +70,7 @@
           <div class="slide-thumb" style="background:${THEME_BG[s.theme] || THEME_BG.purple}">${esc(s.title)}</div>
           <div class="slide-card-body">
             <div class="slide-card-title">${esc(s.title)}</div>
-            <div class="slide-card-meta">${s.slide_count} slides · ${(s.language || 'vi').toUpperCase()} · ${date}</div>
+            <div class="slide-card-meta">${esc(String(s.slide_count))} slides · ${(s.language || 'vi').toUpperCase()} · ${date}</div>
             <div class="slide-card-actions">
               <a href="/preview.html?id=${s.id}" class="btn btn-secondary" style="flex:1;justify-content:center;font-size:12px;">👁 Xem</a>
               <button class="btn btn-success" style="flex:1;font-size:12px;" onclick="downloadPptx(${s.id})">⬇ .pptx</button>
