@@ -7,7 +7,9 @@ const Auth = {
 
 async function apiFetch(path, options = {}) {
   const token = Auth.getToken();
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  const isFormData = options.body instanceof FormData;
+  const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+  Object.assign(headers, options.headers || {});
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(path, { ...options, headers });
   if (res.status === 401) {

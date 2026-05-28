@@ -229,7 +229,11 @@
           r = await apiFetch('/slides/generate', { method: 'POST', body: JSON.stringify(body) });
         }
         if (r && r.ok) { window.location.href = `/preview.html?id=${(await r.json()).slide_id}`; }
-        else { const e = r ? await r.json() : {}; showToast(e.detail || 'Tạo slide thất bại. Kiểm tra lại API key.', 'error'); }
+        else {
+          const e = r ? await r.json() : {};
+          const msg = typeof e.detail === 'string' ? e.detail : 'Tạo slide thất bại. Kiểm tra lại API key.';
+          showToast(msg, 'error');
+        }
       } finally {
         document.getElementById('loading').classList.remove('show');
       }
