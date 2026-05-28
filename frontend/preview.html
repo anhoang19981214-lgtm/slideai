@@ -59,7 +59,7 @@
     let deck;
     if (!slideId) { window.location.href = '/dashboard.html'; }
 
-    (async () => {
+    if (slideId) (async () => {
       const r = await apiFetch(`/slides/${slideId}`);
       if (!r || !r.ok) {
         showToast('Không tìm thấy slide', 'error');
@@ -67,6 +67,10 @@
         return;
       }
       const data = await r.json();
+      if (!Array.isArray(data.slides)) {
+        showToast('Dữ liệu slide không hợp lệ', 'error');
+        return;
+      }
       renderSlides(data.slides, THEME_COLORS[data.theme] || THEME_COLORS.purple);
     })();
 
@@ -92,19 +96,19 @@
         section.style.cssText = `background:${colors.bg};color:${colors.text};`;
 
         if (s.type === 'cover') {
-          section.innerHTML = `<div class="slide-cover"><h2 class="slide-title" style="color:${colors.accent}">${s.title}</h2><div class="theme-bar" style="background:${colors.accent}"></div><p class="slide-subtitle">${s.subtitle || ''}</p></div>`;
+          section.innerHTML = `<div class="slide-cover"><h2 class="slide-title" style="color:${colors.accent}">${esc(s.title)}</h2><div class="theme-bar" style="background:${colors.accent}"></div><p class="slide-subtitle">${esc(s.subtitle)}</p></div>`;
         } else if (s.type === 'content') {
-          const bullets = (s.bullets || []).map(b => `<li>${b}</li>`).join('');
-          section.innerHTML = `<h3 class="slide-title" style="color:${colors.accent};font-size:1.5em">${s.title}</h3><ul class="slide-bullets">${bullets}</ul>`;
+          const bullets = (s.bullets || []).map(b => `<li>${esc(b)}</li>`).join('');
+          section.innerHTML = `<h3 class="slide-title" style="color:${colors.accent};font-size:1.5em">${esc(s.title)}</h3><ul class="slide-bullets">${bullets}</ul>`;
         } else if (s.type === 'conclusion') {
-          section.innerHTML = `<div class="slide-cover"><h2 class="slide-title" style="color:${colors.accent}">${s.title}</h2><div class="theme-bar" style="background:${colors.accent}"></div><p class="slide-summary">${s.summary || ''}</p></div>`;
+          section.innerHTML = `<div class="slide-cover"><h2 class="slide-title" style="color:${colors.accent}">${esc(s.title)}</h2><div class="theme-bar" style="background:${colors.accent}"></div><p class="slide-summary">${esc(s.summary)}</p></div>`;
         }
         container.appendChild(section);
 
         const thumb = document.createElement('div');
         thumb.className = 'thumb' + (i === 0 ? ' active' : '');
         thumb.dataset.index = i;
-        thumb.innerHTML = `<div class="thumb-inner" style="background:${colors.bg};color:${colors.accent}"><span>${s.title}</span></div><div class="thumb-num">${i + 1}</div>`;
+        thumb.innerHTML = `<div class="thumb-inner" style="background:${colors.bg};color:${colors.accent}"><span>${esc(s.title)}</span></div><div class="thumb-num">${i + 1}</div>`;
         thumb.onclick = () => deck.slide(i);
         thumbs.appendChild(thumb);
       });

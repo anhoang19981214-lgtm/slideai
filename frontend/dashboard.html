@@ -56,7 +56,7 @@
 
     (async () => {
       const r = await apiFetch('/slides/history');
-      if (!r || !r.ok) return;
+      if (!r || !r.ok) { showToast('Tải lịch sử thất bại', 'error'); return; }
       const slides = await r.json();
       const grid = document.getElementById('slides-grid');
       document.getElementById('count-label').textContent = `${slides.length} bài thuyết trình`;
@@ -67,10 +67,10 @@
         const card = document.createElement('div');
         card.className = 'card slide-card';
         card.innerHTML = `
-          <div class="slide-thumb" style="background:${THEME_BG[s.theme] || THEME_BG.purple}">${s.title}</div>
+          <div class="slide-thumb" style="background:${THEME_BG[s.theme] || THEME_BG.purple}">${esc(s.title)}</div>
           <div class="slide-card-body">
-            <div class="slide-card-title">${s.title}</div>
-            <div class="slide-card-meta">${s.slide_count} slides · ${s.language.toUpperCase()} · ${date}</div>
+            <div class="slide-card-title">${esc(s.title)}</div>
+            <div class="slide-card-meta">${s.slide_count} slides · ${(s.language || 'vi').toUpperCase()} · ${date}</div>
             <div class="slide-card-actions">
               <a href="/preview.html?id=${s.id}" class="btn btn-secondary" style="flex:1;justify-content:center;font-size:12px;">👁 Xem</a>
               <button class="btn btn-success" style="flex:1;font-size:12px;" onclick="downloadPptx(${s.id})">⬇ .pptx</button>

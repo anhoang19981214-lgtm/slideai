@@ -141,10 +141,13 @@
         language: document.getElementById('language').value,
         theme: selectedTheme,
       };
-      const r = await apiFetch('/slides/generate', { method: 'POST', body: JSON.stringify(body) });
-      document.getElementById('loading').classList.remove('show');
-      if (r && r.ok) { window.location.href = `/preview.html?id=${(await r.json()).slide_id}`; }
-      else { const e = r ? await r.json() : {}; showToast(e.detail || 'Tạo slide thất bại. Kiểm tra lại API key.', 'error'); }
+      try {
+        const r = await apiFetch('/slides/generate', { method: 'POST', body: JSON.stringify(body) });
+        if (r && r.ok) { window.location.href = `/preview.html?id=${(await r.json()).slide_id}`; }
+        else { const e = r ? await r.json() : {}; showToast(e.detail || 'Tạo slide thất bại. Kiểm tra lại API key.', 'error'); }
+      } finally {
+        document.getElementById('loading').classList.remove('show');
+      }
     }
   </script>
 </body>
