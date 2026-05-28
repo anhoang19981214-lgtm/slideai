@@ -28,11 +28,6 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(slides_router)
 
-@app.get("/health")
-def health():
-    _public = Path(__file__).parent.parent / "public"
-    return {"ok": True, "public_exists": _public.exists(), "public_path": str(_public)}
-
 _public = Path(__file__).parent.parent / "public"
 if _public.exists():
     app.mount("/", StaticFiles(directory=str(_public), html=True), name="frontend")
