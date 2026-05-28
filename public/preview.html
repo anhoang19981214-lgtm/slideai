@@ -30,6 +30,12 @@
     /* Fullscreen button */
     .fs-btn { position:absolute; bottom:16px; right:16px; z-index:100; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; backdrop-filter:blur(4px); transition:all .2s; }
     .fs-btn:hover { background:rgba(255,255,255,0.15); }
+    /* Autoplay controls */
+    .play-controls { position:absolute; bottom:16px; left:16px; z-index:100; display:flex; gap:8px; align-items:center; }
+    .play-controls button, .play-controls select { background:rgba(0,0,0,0.55); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:6px; padding:6px 11px; cursor:pointer; font-size:13px; backdrop-filter:blur(4px); transition:all .2s; outline:none; }
+    .play-controls button:hover { background:rgba(255,255,255,0.15); }
+    .play-controls select option { background:#1a1a2e; color:#fff; }
+    .play-controls button.playing { background:rgba(167,139,250,0.25); border-color:rgba(167,139,250,0.5); }
     @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
     .cursor-blink { animation: blink 1s step-end infinite; }
   </style>
@@ -48,6 +54,16 @@
     <div class="thumbnail-strip" id="thumbnails"></div>
     <div class="reveal-area" id="reveal-area">
       <div class="reveal"><div class="slides" id="slides-container"></div></div>
+      <div class="play-controls" id="play-controls">
+        <button id="play-btn" title="Phát tự động">▶ Play</button>
+        <select id="play-speed" title="Tốc độ mỗi slide">
+          <option value="3000">3 giây</option>
+          <option value="5000" selected>5 giây</option>
+          <option value="8000">8 giây</option>
+          <option value="10000">10 giây</option>
+          <option value="15000">15 giây</option>
+        </select>
+      </div>
       <button class="fs-btn" id="fs-btn" title="Toàn màn hình">⛶ Fullscreen</button>
     </div>
   </div>
@@ -68,7 +84,7 @@
     const DOT_PATTERN = `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1' fill='%23ffffff' fill-opacity='0.04'/%3E%3C/svg%3E")`;
 
     const slideId = getParam('id');
-    let deck;
+    let deck, isPlaying = false;
     if (!slideId) window.location.href = '/dashboard.html';
 
     document.getElementById('export-btn').onclick = async (e) => {
@@ -88,6 +104,20 @@
       else document.exitFullscreen();
     };
 
+    document.getElementById('play-btn').onclick = () => {
+      if (!deck) return;
+      isPlaying = !isPlaying;
+      const speed = parseInt(document.getElementById('play-speed').value);
+      deck.configure({ autoSlide: isPlaying ? speed : 0 });
+      const btn = document.getElementById('play-btn');
+      btn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+      btn.classList.toggle('playing', isPlaying);
+    };
+
+    document.getElementById('play-speed').onchange = () => {
+      if (isPlaying && deck) deck.configure({ autoSlide: parseInt(document.getElementById('play-speed').value) });
+    };
+
     if (slideId) (async () => {
       const r = await apiFetch(`/slides/${slideId}`);
       if (!r || !r.ok) { showToast('Không tìm thấy slide', 'error'); setTimeout(() => window.location.href = '/dashboard.html', 2000); return; }
@@ -95,6 +125,11 @@
       if (!Array.isArray(data.slides)) { showToast('Dữ liệu slide không hợp lệ', 'error'); return; }
       renderSlides(data.slides, THEMES[data.theme] || THEMES.purple, data.template || 'vibrant');
     })();
+
+    function getImgUrl(keyword, idx) {
+      if (!keyword) return null;
+      return `https://loremflickr.com/1920/1080/${encodeURIComponent(keyword)}?lock=${idx}`;
+    }
 
     /* ── VIBRANT BUILDERS ── */
     function buildVibrantCover(s, c, idx) {
@@ -430,6 +465,9 @@
       const container = document.getElementById('slides-container');
       const thumbs = document.getElementById('thumbnails');
       container.innerHTML = ''; thumbs.innerHTML = '';
+      isPlaying = false;
+      const playBtn = document.getElementById('play-btn');
+      if (playBtn) { playBtn.textContent = '▶ Play'; playBtn.classList.remove('playing'); }
 
       slides.forEach((s, i) => {
         const section = document.createElement('section');
@@ -438,6 +476,15 @@
         else if (s.type === 'content') html = tpl.content(s, c, i + 1);
         else if (s.type === 'conclusion') html = tpl.conclusion(s, c, i + 1);
         section.innerHTML = html;
+
+        if (s.image_keyword) {
+          const imgUrl = getImgUrl(s.image_keyword, i + 1);
+          const imgLayer = document.createElement('div');
+          imgLayer.style.cssText = `position:absolute;inset:0;background:url('${imgUrl}') center/cover no-repeat;opacity:0.13;z-index:0;pointer-events:none;`;
+          const root = section.querySelector('.slide-root');
+          if (root) root.insertBefore(imgLayer, root.firstChild);
+        }
+
         container.appendChild(section);
 
         const thumb = document.createElement('div');

@@ -41,16 +41,17 @@ Document:
 
 Requirements:
 - Exactly {slide_count} slides total
-- Slide 1: type "cover" with fields "title" (extracted main topic) and "subtitle"
-- Slides 2 to {last_content}: type "content" with fields "title" and "bullets" (list of 3-5 strings, each under 15 words)
-- Slide {slide_count}: type "conclusion" with fields "title" and "summary"
+- Slide 1: type "cover" with fields "title" (extracted main topic), "subtitle", and "image_keyword"
+- Slides 2 to {last_content}: type "content" with fields "title", "bullets" (list of 3-5 strings, each under 15 words), and "image_keyword"
+- Slide {slide_count}: type "conclusion" with fields "title", "summary", and "image_keyword"
 - Faithfully represent the document's key points
+- "image_keyword": 2-3 English words describing a relevant background image (e.g. "artificial intelligence data", "team collaboration office", "nature landscape sky")
 
 Respond with ONLY valid JSON array, no markdown fences, no explanation:
 [
-  {{"index": 1, "type": "cover", "title": "...", "subtitle": "..."}},
-  {{"index": 2, "type": "content", "title": "...", "bullets": ["...", "...", "..."]}},
-  {{"index": {slide_count}, "type": "conclusion", "title": "...", "summary": "..."}}
+  {{"index": 1, "type": "cover", "title": "...", "subtitle": "...", "image_keyword": "..."}},
+  {{"index": 2, "type": "content", "title": "...", "bullets": ["...", "...", "..."], "image_keyword": "..."}},
+  {{"index": {slide_count}, "type": "conclusion", "title": "...", "summary": "...", "image_keyword": "..."}}
 ]"""
 
 SLIDE_PROMPT = """\
@@ -58,15 +59,16 @@ You are a professional presentation designer. Create a slide deck in {language} 
 {description_line}
 Requirements:
 - Exactly {slide_count} slides total
-- Slide 1: type "cover" with fields "title" and "subtitle"
-- Slides 2 to {last_content}: type "content" with fields "title" and "bullets" (list of 3-5 strings, each under 15 words)
-- Slide {slide_count}: type "conclusion" with fields "title" and "summary"
+- Slide 1: type "cover" with fields "title", "subtitle", and "image_keyword"
+- Slides 2 to {last_content}: type "content" with fields "title", "bullets" (list of 3-5 strings, each under 15 words), and "image_keyword"
+- Slide {slide_count}: type "conclusion" with fields "title", "summary", and "image_keyword"
+- "image_keyword": 2-3 English words describing a relevant background image (e.g. "artificial intelligence data", "team collaboration office", "nature landscape sky")
 
 Respond with ONLY valid JSON array, no markdown fences, no explanation:
 [
-  {{"index": 1, "type": "cover", "title": "...", "subtitle": "..."}},
-  {{"index": 2, "type": "content", "title": "...", "bullets": ["...", "...", "..."]}},
-  {{"index": {slide_count}, "type": "conclusion", "title": "...", "summary": "..."}}
+  {{"index": 1, "type": "cover", "title": "...", "subtitle": "...", "image_keyword": "..."}},
+  {{"index": 2, "type": "content", "title": "...", "bullets": ["...", "...", "..."], "image_keyword": "..."}},
+  {{"index": {slide_count}, "type": "conclusion", "title": "...", "summary": "...", "image_keyword": "..."}}
 ]"""
 
 
