@@ -16,6 +16,16 @@
     .loading-overlay.show { display:flex; }
     .big-spinner { width:48px; height:48px; border-width:4px; }
     .apikey-banner { background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.3); border-radius:var(--radius); padding:16px 20px; margin-bottom:24px; display:none; }
+    .mode-tabs { display:flex; gap:0; margin-bottom:24px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .mode-tab { flex:1; padding:10px; text-align:center; font-size:14px; font-weight:600; cursor:pointer; background:transparent; color:var(--muted); border:none; transition:all .2s; }
+    .mode-tab.active { background:var(--accent); color:#fff; }
+    .dropzone {
+      border:2px dashed rgba(167,139,250,0.4); border-radius:var(--radius); padding:40px 20px;
+      text-align:center; cursor:pointer; transition:all .2s; background:rgba(167,139,250,0.04);
+    }
+    .dropzone:hover, .dropzone.drag { border-color:var(--accent); background:rgba(167,139,250,0.1); }
+    .dropzone.has-file { border-color:#4ade80; background:rgba(74,222,128,0.06); }
+    .file-info { display:flex; align-items:center; gap:10px; margin-top:12px; padding:10px 14px; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.25); border-radius:8px; }
   </style>
 </head>
 <body>
@@ -37,7 +47,7 @@
     <div class="create-layout">
       <div>
         <h1 style="font-size:28px;font-weight:800;margin-bottom:6px;">✨ Tạo bài thuyết trình mới</h1>
-        <p class="text-muted" style="font-size:14px;margin-bottom:28px;">Nhập chủ đề — AI Gemini sẽ tạo toàn bộ nội dung</p>
+        <p class="text-muted" style="font-size:14px;margin-bottom:28px;">Nhập chủ đề hoặc tải lên file — AI Gemini sẽ tạo toàn bộ nội dung</p>
 
         <div id="apikey-banner" class="apikey-banner">
           <strong style="color:var(--accent);">⚠ Chưa có Gemini API Key</strong>
@@ -48,8 +58,38 @@
           </div>
         </div>
 
-        <div class="form-group"><label class="form-label">Chủ đề / Tiêu đề *</label><input id="topic" type="text" class="form-input" placeholder="VD: Tương lai của AI trong giáo dục"></div>
-        <div class="form-group"><label class="form-label">Mô tả thêm (tuỳ chọn)</label><textarea id="description" class="form-textarea" placeholder="Thêm chi tiết để AI hiểu đúng hơn..."></textarea></div>
+        <div class="mode-tabs">
+          <button class="mode-tab active" id="tab-topic" onclick="switchMode('topic')">✏️ Nhập chủ đề</button>
+          <button class="mode-tab" id="tab-file" onclick="switchMode('file')">📄 Upload file</button>
+        </div>
+
+        <div id="panel-topic">
+          <div class="form-group"><label class="form-label">Chủ đề / Tiêu đề *</label><input id="topic" type="text" class="form-input" placeholder="VD: Tương lai của AI trong giáo dục"></div>
+          <div class="form-group"><label class="form-label">Mô tả thêm (tuỳ chọn)</label><textarea id="description" class="form-textarea" placeholder="Thêm chi tiết để AI hiểu đúng hơn..."></textarea></div>
+        </div>
+
+        <div id="panel-file" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Tải lên tài liệu (PDF, DOCX, TXT)</label>
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()"
+                 ondragover="event.preventDefault();this.classList.add('drag')"
+                 ondragleave="this.classList.remove('drag')"
+                 ondrop="handleDrop(event)">
+              <div style="font-size:36px;margin-bottom:8px;">📂</div>
+              <div style="font-weight:600;margin-bottom:4px;">Kéo thả file vào đây</div>
+              <div class="text-muted" style="font-size:13px;">hoặc click để chọn file · PDF, DOCX, TXT · tối đa 10MB</div>
+            </div>
+            <input id="file-input" type="file" accept=".pdf,.docx,.txt,.md" style="display:none" onchange="handleFileSelect(this.files[0])">
+            <div id="file-info" class="file-info" style="display:none;">
+              <span style="font-size:20px;">📄</span>
+              <div style="flex:1;min-width:0;">
+                <div id="file-name" style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                <div id="file-size" class="text-muted" style="font-size:12px;"></div>
+              </div>
+              <button onclick="clearFile()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;">✕</button>
+            </div>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div class="form-group"><label class="form-label">Số slide (5–25)</label><input id="slide-count" type="number" class="form-input" value="10" min="5" max="25"></div>
           <div class="form-group">
@@ -74,7 +114,7 @@
             <div class="swatch swatch-sunset" data-theme="sunset" onclick="selectTheme(this)" title="Sunset"></div>
           </div>
         </div>
-        <button class="btn btn-primary btn-lg" style="width:100%;margin-top:8px;" onclick="generate()">✦ Tạo Slide với AI</button>
+        <button class="btn btn-primary btn-lg" style="width:100%;margin-top:8px;" onclick="generate()" id="generate-btn">✦ Tạo Slide với AI</button>
       </div>
 
       <div>
@@ -102,6 +142,9 @@
     requireAuth();
     let selectedTheme = 'purple';
     let hasApiKey = false;
+    let currentMode = 'topic';
+    let selectedFile = null;
+
     document.getElementById('logout-link').onclick = () => { Auth.clearToken(); window.location.href = '/'; };
 
     (async () => {
@@ -111,6 +154,37 @@
         if (!hasApiKey) document.getElementById('apikey-banner').style.display = 'block';
       }
     })();
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.getElementById('panel-topic').style.display = mode === 'topic' ? '' : 'none';
+      document.getElementById('panel-file').style.display = mode === 'file' ? '' : 'none';
+      document.getElementById('tab-topic').classList.toggle('active', mode === 'topic');
+      document.getElementById('tab-file').classList.toggle('active', mode === 'file');
+    }
+
+    function handleFileSelect(file) {
+      if (!file) return;
+      selectedFile = file;
+      document.getElementById('dropzone').classList.add('has-file');
+      document.getElementById('file-name').textContent = file.name;
+      document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+      document.getElementById('file-info').style.display = 'flex';
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      document.getElementById('dropzone').classList.remove('drag');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileSelect(file);
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('dropzone').classList.remove('has-file');
+      document.getElementById('file-info').style.display = 'none';
+    }
 
     function selectTheme(el) {
       document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
@@ -127,22 +201,33 @@
     }
 
     async function generate() {
-      const topic = document.getElementById('topic').value.trim();
-      if (!topic) return showToast('Nhập chủ đề bài thuyết trình', 'error');
+      if (!hasApiKey) return showToast('Vui lòng lưu Gemini API key trước', 'error');
       const slideCount = parseInt(document.getElementById('slide-count').value);
       if (slideCount < 5 || slideCount > 25) return showToast('Số slide phải từ 5 đến 25', 'error');
-      if (!hasApiKey) return showToast('Vui lòng lưu Gemini API key trước', 'error');
 
       document.getElementById('loading').classList.add('show');
-      const body = {
-        topic,
-        description: document.getElementById('description').value.trim() || undefined,
-        slide_count: slideCount,
-        language: document.getElementById('language').value,
-        theme: selectedTheme,
-      };
       try {
-        const r = await apiFetch('/slides/generate', { method: 'POST', body: JSON.stringify(body) });
+        let r;
+        if (currentMode === 'file') {
+          if (!selectedFile) { showToast('Chọn file tài liệu trước', 'error'); return; }
+          const fd = new FormData();
+          fd.append('file', selectedFile);
+          fd.append('slide_count', slideCount);
+          fd.append('language', document.getElementById('language').value);
+          fd.append('theme', selectedTheme);
+          r = await apiFetch('/slides/generate-from-file', { method: 'POST', body: fd });
+        } else {
+          const topic = document.getElementById('topic').value.trim();
+          if (!topic) { showToast('Nhập chủ đề bài thuyết trình', 'error'); return; }
+          const body = {
+            topic,
+            description: document.getElementById('description').value.trim() || undefined,
+            slide_count: slideCount,
+            language: document.getElementById('language').value,
+            theme: selectedTheme,
+          };
+          r = await apiFetch('/slides/generate', { method: 'POST', body: JSON.stringify(body) });
+        }
         if (r && r.ok) { window.location.href = `/preview.html?id=${(await r.json()).slide_id}`; }
         else { const e = r ? await r.json() : {}; showToast(e.detail || 'Tạo slide thất bại. Kiểm tra lại API key.', 'error'); }
       } finally {
