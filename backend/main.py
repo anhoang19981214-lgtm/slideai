@@ -10,7 +10,10 @@ from backend.database import Base, engine
 from backend.auth import router as auth_router
 from backend.slides import router as slides_router
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception:
+    pass
 
 app = FastAPI(title="SlideAI")
 
