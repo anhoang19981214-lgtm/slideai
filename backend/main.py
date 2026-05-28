@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,4 +24,6 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(slides_router)
-app.mount("/", StaticFiles(directory="public", html=True), name="frontend")
+
+_public = Path(__file__).parent.parent / "public"
+app.mount("/", StaticFiles(directory=str(_public), html=True), name="frontend")
