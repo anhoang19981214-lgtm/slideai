@@ -15,12 +15,12 @@ app = FastAPI(title="SlideAI")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(auth_router)
 app.include_router(slides_router)
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+app.mount("/", StaticFiles(directory="public", html=True), name="frontend")

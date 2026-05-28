@@ -1,0 +1,12 @@
+{
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "rewrites": [
+    { "source": "/auth/:path*", "destination": "/api/index.py" },
+    { "source": "/slides/:path*", "destination": "/api/index.py" }
+  ]
+}
